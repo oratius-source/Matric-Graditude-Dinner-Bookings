@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Garden Evening · Parent Ticket Booking</title>
+    <!-- Font Awesome for icons (optional but nice) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+        }
+        body {
+            background: linear-gradient(145deg, #1e3c2c 0%, #2a5a3a 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+        }
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            max-width: 620px;
+            width: 100%;
+            border-radius: 48px 48px 32px 32px;
+            box-shadow: 0 25px 40px -10px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 200, 0.3);
+            transition: all 0.2s;
+        }
+        .header {
+            background: #0d2e1b;
+            padding: 2rem 2rem 1.8rem;
+            text-align: center;
+            color: #f9f3d9;
+            position: relative;
+            border-bottom: 4px solid #e6b422;
+        }
+        .header h1 {
+            font-size: 2.1rem;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .header h1 i {
+            color: #ffd966;
+            font-size: 2rem;
+        }
+        .header p {
+            margin-top: 0.5rem;
+            font-size: 1.1rem;
+            color: #cfb87c;
+            font-style: italic;
+        }
+        .cutoff-badge {
+            background: #b8860b;
+            color: #fff7e6;
+            display: inline-block;
+            padding: 0.4rem 1.2rem;
+            border-radius: 60px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-top: 1rem;
+            letter-spacing: 0.3px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        .cutoff-badge i {
+            margin-right: 6px;
+            font-size: 0.9rem;
+        }
+        .form-body {
+            padding: 2rem 2rem 2.2rem;
+        }
+        .input-group {
+            margin-bottom: 1.8rem;
+        }
+        label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+            color: #1e3c2c;
+            margin-bottom: 0.5rem;
+            font-size: 1rem;
+        }
+        label i {
+            color: #b8860b;
+            width: 20px;
+        }
+        input, select {
+            width: 100%;
+            padding: 0.9rem 1.2rem;
+            border: 2px solid #d9d0b5;
+            border-radius: 24px;
+            font-size: 1.05rem;
+            background: #fefcf5;
+            transition: 0.2s;
+            outline: none;
+            color: #1e2a1e;
+        }
+        input:focus, select:focus {
+            border-color: #b8860b;
+            box-shadow: 0 0 0 4px rgba(184, 134, 11, 0.15);
+            background: #ffffff;
+        }
+        .hint {
+            font-size: 0.85rem;
+            color: #6b5a3a;
+            margin-top: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .hint i {
+            font-size: 0.8rem;
+            color: #b8860b;
+        }
+        .ticket-summary {
+            background: #eef4e6;
+            border-radius: 24px;
+            padding: 1rem 1.3rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 1.5rem 0 1rem;
+            border-left: 6px solid #b8860b;
+            font-weight: 500;
+        }
+        .ticket-summary span:first-child {
+            color: #2a4a2a;
+        }
+        .total-price {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #0d2e1b;
+        }
+        .total-price small {
+            font-size: 0.9rem;
+            font-weight: 400;
+            color: #6b5a3a;
+        }
+        button {
+            background: #0d2e1b;
+            color: white;
+            border: none;
+            width: 100%;
+            padding: 1.1rem;
+            font-size: 1.2rem;
+            font-weight: 700;
+            border-radius: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: 0.2s;
+            letter-spacing: 0.5px;
+            margin-top: 1rem;
+            box-shadow: 0 8px 16px -6px rgba(0, 0, 0, 0.3);
+            border: 1px solid #e6b422;
+        }
+        button:hover {
+            background: #1d4a2d;
+            transform: scale(1.01);
+            box-shadow: 0 12px 20px -8px #00000060;
+        }
+        button:active {
+            transform: scale(0.98);
+        }
+        button i {
+            color: #ffd966;
+        }
+        .message {
+            margin-top: 1.2rem;
+            text-align: center;
+            font-size: 0.95rem;
+            min-height: 1.5rem;
+            padding: 0.3rem;
+            border-radius: 40px;
+            transition: 0.2s;
+        }
+        .success {
+            background: #d4edc9;
+            color: #1d4a2d;
+            font-weight: 600;
+            padding: 0.8rem;
+        }
+        .error {
+            background: #f8e1e1;
+            color: #a13030;
+            font-weight: 600;
+            padding: 0.8rem;
+        }
+        .footer-note {
+            text-align: center;
+            margin-top: 1.8rem;
+            font-size: 0.8rem;
+            color: #8b7a5a;
+            border-top: 1px dashed #d9d0b5;
+            padding-top: 1rem;
+        }
+        .footer-note i {
+            margin: 0 4px;
+        }
+        /* small */
+        @media (max-width: 480px) {
+            .card { border-radius: 32px; }
+            .header h1 { font-size: 1.6rem; }
+            .form-body { padding: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="header">
+            <h1>
+                <i class="fas fa-tree"></i> Garden Evening <i class="fas fa-music"></i>
+            </h1>
+            <p>invitation to parents & guardians</p>
+            <div class="cutoff-badge">
+                <i class="fas fa-calendar-times"></i> Ticket sales close: 31 September 2026
+            </div>
+        </div>
+        <div class="form-body">
+            <!-- FORM -->
+            <form id="ticketForm" name="gardenEvening">
+                <!-- Learner name -->
+                <div class="input-group">
+                    <label for="learnerName"><i class="fas fa-user-graduate"></i> Learner full name</label>
+                    <input type="text" id="learnerName" name="learnerName" placeholder="e.g. Thabo Mokoena" required>
+                </div>
+
+                <!-- Number of tickets (max 3) -->
+                <div class="input-group">
+                    <label for="ticketCount"><i class="fas fa-ticket-alt"></i> Number of tickets</label>
+                    <select id="ticketCount" name="ticketCount" required>
+                        <option value="" disabled selected>— Select quantity —</option>
+                        <option value="1">1 ticket</option>
+                        <option value="2">2 tickets</option>
+                        <option value="3">3 tickets</option>
+                    </select>
+                    <div class="hint">
+                        <i class="fas fa-info-circle"></i> Maximum 3 tickets per parent · R120 each
+                    </div>
+                </div>
+
+                <!-- price summary -->
+                <div class="ticket-summary">
+                    <span><i class="fas fa-calculator"></i> Total due</span>
+                    <span class="total-price" id="totalDisplay">R0 <small>ZAR</small></span>
+                </div>
+
+                <!-- hidden field for total (optional) -->
+                <input type="hidden" id="totalAmount" name="totalAmount" value="0">
+
+                <!-- Submit -->
+                <button type="submit" id="submitBtn">
+                    <i class="fas fa-paper-plane"></i> Send invitation & book tickets
+                </button>
+
+                <!-- Response message -->
+                <div id="formMessage" class="message"></div>
+            </form>
+            <div class="footer-note">
+                <i class="fas fa-lock"></i> Your details are sent to the school's Google Sheet <i class="fas fa-leaf"></i>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            // ----------------------------------------------------------------
+            // 1. CONFIGURATION – REPLACE WITH YOUR GOOGLE SHEET WEB APP URL
+            // ----------------------------------------------------------------
+            const GOOGLE_SHEET_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbzEXAMPLE_REPLACE_ME/exec'; 
+            // ⚠️ IMPORTANT: You must deploy your own Google Apps Script Web App and paste the URL here.
+            // Follow the instructions in the description to set up the sheet.
+
+            // 2. DOM elements
+            const ticketForm = document.getElementById('ticketForm');
+            const learnerInput = document.getElementById('learnerName');
+            const ticketSelect = document.getElementById('ticketCount');
+            const totalDisplay = document.getElementById('totalDisplay');
+            const totalHidden = document.getElementById('totalAmount');
+            const formMessage = document.getElementById('formMessage');
+            const submitBtn = document.getElementById('submitBtn');
+
+            // 3. Price per ticket
+            const TICKET_PRICE = 120;
+
+            // 4. Update total when ticket count changes
+            function updateTotal() {
+                const count = parseInt(ticketSelect.value, 10);
+                if (!isNaN(count) && count >= 1 && count <= 3) {
+                    const total = count * TICKET_PRICE;
+                    totalDisplay.innerHTML = `R${total} <small>ZAR</small>`;
+                    totalHidden.value = total;
+                } else {
+                    totalDisplay.innerHTML = `R0 <small>ZAR</small>`;
+                    totalHidden.value = 0;
+                }
+            }
+
+            // listen to select change
+            ticketSelect.addEventListener('change', updateTotal);
+            // also reset total if nothing selected (on page load)
+            updateTotal();
+
+            // 5. Handle form submission
+            ticketForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                // --- clear previous message ---
+                formMessage.className = 'message';
+                formMessage.textContent = '';
+
+                // --- validate learner name ---
+                const learnerName = learnerInput.value.trim();
+                if (learnerName === '') {
+                    formMessage.textContent = '❌ Please enter the learner\'s full name.';
+                    formMessage.classList.add('error');
+                    return;
+                }
+
+                // --- validate ticket count ---
+                const ticketCount = ticketSelect.value;
+                if (!ticketCount || ticketCount === '') {
+                    formMessage.textContent = '❌ Please select the number of tickets.';
+                    formMessage.classList.add('error');
+                    return;
+                }
+
+                const count = parseInt(ticketCount, 10);
+                if (isNaN(count) || count < 1 || count > 3) {
+                    formMessage.textContent = '❌ Maximum 3 tickets allowed per parent.';
+                    formMessage.classList.add('error');
+                    return;
+                }
+
+                // --- calculate total (just for safety) ---
+                const totalAmount = count * TICKET_PRICE;
+
+                // --- Prepare data for Google Sheet ---
+                // We'll use URL-encoded form data (application/x-www-form-urlencoded)
+                // which is simple and works with Apps Script doPost(e)
+                const formData = new URLSearchParams();
+                formData.append('learnerName', learnerName);
+                formData.append('ticketCount', count);
+                formData.append('totalAmount', totalAmount);
+                formData.append('timestamp', new Date().toISOString());
+
+                // --- disable button while sending ---
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+                formMessage.textContent = '⏳ Submitting your booking...';
+                formMessage.className = 'message';
+
+                // --- Send to Google Apps Script Web App ---
+                fetch(GOOGLE_SHEET_WEBAPP_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: formData.toString()
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.text(); // Apps Script often returns plain text or JSON
+                })
+                .then(data => {
+                    // Success
+                    console.log('Server response:', data);
+                    formMessage.textContent = '✅ Booking confirmed! Thank you.';
+                    formMessage.classList.add('success');
+
+                    // Optionally reset form (keep name maybe, but reset selection)
+                    // learnerInput.value = '';   // you can keep learner name for convenience
+                    // ticketSelect.value = '';    // reset select
+                    // updateTotal();
+                    // but we reset only the select to avoid double booking? We'll reset both for a clean form.
+                    learnerInput.value = '';
+                    ticketSelect.value = '';
+                    updateTotal();
+
+                    // Re-enable button
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send invitation & book tickets';
+                })
+                .catch(error => {
+                    console.error('Error!', error);
+                    formMessage.textContent = '❌ Something went wrong. Please try again or contact the school.';
+                    formMessage.classList.add('error');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send invitation & book tickets';
+                });
+            });
+
+            // 6. extra: if user selects invalid manually? max 3 already enforced by options.
+            // Make sure the total updates if someone uses keyboard arrow.
+            ticketSelect.addEventListener('input', updateTotal);
+        })();
+    </script>
+
+    <!-- 
+        ============================================================
+        HOW TO LINK TO GOOGLE SHEETS – STEP BY STEP
+        ============================================================
+        1. Create a new Google Sheet.
+        2. Rename the sheet to "GardenEvening" (or any name, but update code).
+        3. Go to Extensions > Apps Script.
+        4. Delete any code and paste the following:
+
+        function doPost(e) {
+            try {
+                var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("GardenEvening");
+                if (!sheet) {
+                    sheet = SpreadsheetApp.getActiveSpreadsheet().insertSheet("GardenEvening");
+                    sheet.appendRow(["Timestamp", "Learner Name", "Tickets", "Total (R)"]);
+                }
+                var headers = sheet.getRange(1, 1, 1, 4).getValues()[0];
+                if (headers[0] !== "Timestamp") {
+                    sheet.insertRowBefore(1);
+                    sheet.getRange(1, 1, 1, 4).setValues([["Timestamp", "Learner Name", "Tickets", "Total (R)"]]);
+                }
+                
+                var timestamp = e.parameter.timestamp || new Date().toISOString();
+                var learnerName = e.parameter.learnerName || "N/A";
+                var ticketCount = e.parameter.ticketCount || "0";
+                var totalAmount = e.parameter.totalAmount || "0";
+                
+                sheet.appendRow([timestamp, learnerName, ticketCount, totalAmount]);
+                
+                return ContentService.createTextOutput("Success").setMimeType(ContentService.MimeType.TEXT);
+            } catch (error) {
+                return ContentService.createTextOutput("Error: " + error.toString()).setMimeType(ContentService.MimeType.TEXT);
+            }
+        }
+
+        5. Click Deploy > New deployment.
+        6. Select type: Web app.
+        7. Description: "Garden Evening ticket handler".
+        8. Execute as: Me.
+        9. Who has access: Anyone.
+        10. Click Deploy, authorize, and copy the Web App URL.
+        11. Replace the GOOGLE_SHEET_WEBAPP_URL in the script above with your URL.
+        12. Save and reload this HTML page.
+
+        ============================================================
+        EVENT CUT-OFF: 31 September 2026 (this is a soft reminder; 
+        you can disable the form after that date using JS if needed)
+        ============================================================
+    -->
+</body>
+</html>

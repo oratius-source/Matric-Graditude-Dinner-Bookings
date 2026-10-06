@@ -52,6 +52,23 @@
     background:linear-gradient(90deg, var(--khaki-mid), var(--khaki-light), var(--khaki-mid));
   }
 
+  /* ---------- CASH PAYMENT NOTICE ---------- */
+  .cash-notice{
+    background:linear-gradient(90deg, #1d4e9b, #0b2a5b);
+    color:var(--khaki-light);
+    padding:.85rem 1.2rem;
+    text-align:center;
+    font-weight:700;
+    font-size:.9rem;
+    letter-spacing:.3px;
+    border-bottom:3px solid var(--khaki-mid);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+  }
+  .cash-notice i{color:var(--khaki-mid);font-size:1.05rem;}
+
   /* ---------- HERO ---------- */
   .hero{
     background:
@@ -184,6 +201,12 @@
     box-shadow:0 0 0 4px rgba(29,78,155,.15);
   }
 
+  /* duplicate warning styles */
+  input.duplicate{
+    border-color:#d9534f;
+    box-shadow:0 0 0 4px rgba(217,83,79,.15);
+  }
+
   .hint{
     display:flex;
     align-items:center;
@@ -224,6 +247,27 @@
     font-weight:600;
     color:#6b6350;
   }
+
+  /* ---------- PAYMENT NOTE ---------- */
+  .payment-note{
+    display:flex;
+    align-items:flex-start;
+    gap:10px;
+    background:rgba(29,78,155,.08);
+    border:1px dashed var(--blue-mid);
+    border-radius:14px;
+    padding:.85rem 1rem;
+    margin-bottom:1.2rem;
+    font-size:.87rem;
+    color:#3a4a63;
+    line-height:1.5;
+  }
+  .payment-note i{
+    color:var(--blue-mid);
+    font-size:1.1rem;
+    margin-top:2px;
+  }
+  .payment-note strong{color:var(--blue-deep);}
 
   /* ---------- BUTTON ---------- */
   button{
@@ -291,6 +335,7 @@
   .footer i{color:var(--khaki-mid);margin:0 4px;}
 
   @media (max-width:480px){
+    .cash-notice{font-size:.82rem;padding:.75rem 1rem;}
     .hero{padding:1.8rem 1.3rem 2rem;}
     .body{padding:1.6rem 1.3rem 1.8rem;}
     .summary{flex-direction:column;gap:.5rem;align-items:flex-start;}
@@ -301,6 +346,12 @@
 <body>
 
 <div class="card">
+
+  <!-- CASH PAYMENT NOTICE -->
+  <div class="cash-notice">
+    <i class="fas fa-money-bill-wave"></i>
+    Cash payment at Admin Reception
+  </div>
 
   <!-- HERO -->
   <div class="hero">
@@ -343,7 +394,11 @@
           <i class="fas fa-user-graduate"></i> Child's full name
         </label>
         <input type="text" id="learnerName" name="learnerName"
-               placeholder="e.g. Thabo Mokoena" required>
+               placeholder="e.g. Thabo Mokoena" required autocomplete="off">
+        <div class="hint">
+          <i class="fas fa-info-circle"></i>
+          Only one RSVP per learner — duplicates will be rejected
+        </div>
       </div>
 
       <div class="field">
@@ -382,6 +437,15 @@
         <span class="price" id="totalDisplay">R0 <small>ZAR</small></span>
       </div>
 
+      <div class="payment-note">
+        <i class="fas fa-hand-holding-dollar"></i>
+        <span>
+          <strong>Payment method:</strong> Cash payment at Admin Reception.
+          Please bring the exact amount. Your booking will be confirmed once
+          payment has been received.
+        </span>
+      </div>
+
       <input type="hidden" id="totalAmount" name="totalAmount" value="0">
 
       <button type="submit" id="submitBtn">
@@ -418,6 +482,38 @@
   const formMessage = document.getElementById('formMessage');
   const submitBtn   = document.getElementById('submitBtn');
 
+  // Normalize name for comparison: lowercase, trim, collapse spaces
+  function normalizeName(name) {
+    return name.toLowerCase().replace(/\s+/g, ' ').trim();
+  }
+
+  // ---- Local duplicate check (fast, catches same-browser repeats) ----
+  function isDuplicateLocally(name) {
+    try {
+      const list = JSON.parse(localStorage.getItem('rsvpLearners') || '[]');
+      return list.indexOf(normalizeName(name)) !== -1;
+    } catch (e) {
+      return false;
+    }
+  }
+  function saveLocally(name) {
+    try {
+      const list = JSON.parse(localStorage.getItem('rsvpLearners') || '[]');
+      const norm = normalizeName(name);
+      if (list.indexOf(norm) === -1) list.push(norm);
+      localStorage.setItem('rsvpLearners', JSON.stringify(list));
+    } catch (e) { /* ignore */ }
+  }
+
+  // Live check while typing
+  learnerInput.addEventListener('input', function () {
+    if (learnerInput.value.trim() && isDuplicateLocally(learnerInput.value)) {
+      learnerInput.classList.add('duplicate');
+    } else {
+      learnerInput.classList.remove('duplicate');
+    }
+  });
+
   // Update total when the quantity changes
   function updateTotal() {
     const count = parseInt(ticketSelect.value, 10);
@@ -438,11 +534,20 @@
     e.preventDefault();
     formMessage.className = 'message';
     formMessage.textContent = '';
+    learnerInput.classList.remove('duplicate');
 
     const learnerName = learnerInput.value.trim();
     if (!learnerName) {
       formMessage.textContent = '❌ Please enter the child\'s full name.';
       formMessage.classList.add('error');
+      return;
+    }
+
+    // ---- Local duplicate check ----
+    if (isDuplicateLocally(learnerName)) {
+      formMessage.textContent = '❌ This learner has already been RSVP\'d. Only one booking per learner is allowed.';
+      formMessage.classList.add('error');
+      learnerInput.classList.add('duplicate');
       return;
     }
 
@@ -467,6 +572,7 @@
     formData.append('ticketCount', count);
     formData.append('transportation', transportation);
     formData.append('totalAmount', totalAmount);
+    formData.append('paymentMethod', 'Cash at Admin Reception');
     formData.append('event', 'Matric Gratitude Dinner');
     formData.append('eventDate', '9 October 2026');
     formData.append('venue', 'Rain Hill Farm');
@@ -479,16 +585,15 @@
 
     fetch(GOOGLE_SHEET_WEBAPP_URL, {
       method: 'POST',
+      mode: 'no-cors',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: formData.toString()
     })
-    .then(function (response) {
-      if (!response.ok) throw new Error('HTTP ' + response.status);
-      return response.text();
-    })
-    .then(function (data) {
-      console.log('Server response:', data);
-      formMessage.textContent = '✅ RSVP confirmed! Thank you.';
+    .then(function () {
+      // Save locally so same browser can't submit again
+      saveLocally(learnerName);
+
+      formMessage.innerHTML = '✅ RSVP received! Please pay <strong>cash at Admin Reception</strong> to confirm your booking.';
       formMessage.classList.add('success');
       learnerInput.value = '';
       ticketSelect.value = '';

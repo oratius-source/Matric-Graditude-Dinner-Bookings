@@ -3,15 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Kitsong School of Royal Bafokeng · Matric Garden Evening</title>
+<title>Kitsong School of Royal Bafokeng · Matric Gratitude Dinner</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 <style>
   /* ---------- SCHOOL COLOURS ---------- */
   :root{
-    --blue-deep:   #0b2a5b;   /* Kitsong royal blue */
+    --blue-deep:   #0b2a5b;
     --blue-mid:    #1d4e9b;
     --blue-light:  #3f7fd1;
-    --khaki-light: #efe6c8;   /* light khaki */
+    --khaki-light: #efe6c8;
     --khaki-mid:   #d9c98a;
     --khaki-dark:  #b8a35c;
     --cream:       #fbf7ec;
@@ -33,7 +33,6 @@
     justify-content:center;
   }
 
-  /* ---------- CARD ---------- */
   .card{
     width:100%;
     max-width:680px;
@@ -46,7 +45,6 @@
     position:relative;
   }
 
-  /* Thin khaki ribbon at very top */
   .card::before{
     content:"";
     display:block;
@@ -121,7 +119,7 @@
   }
   .pill i{color:var(--khaki-mid);}
 
-  /* ---------- CUT-OFF BANNER ---------- */
+  /* ---------- RSVP BANNER ---------- */
   .cutoff{
     background:linear-gradient(90deg, var(--khaki-mid), var(--khaki-light), var(--khaki-mid));
     color:var(--blue-deep);
@@ -311,20 +309,20 @@
       Kitsong School of Royal Bafokeng
     </div>
 
-    <h1>Matric <span class="accent">Garden Evening</span></h1>
-    <p class="subtitle">An outdoor celebration under the stars</p>
+    <h1>Matric <span class="accent">Gratitude Dinner</span></h1>
+    <p class="subtitle">An evening of thanks and celebration</p>
 
     <div class="event-meta">
-      <span class="pill"><i class="fas fa-tree"></i> Outdoor Event</span>
-      <span class="pill"><i class="fas fa-graduation-cap"></i> Matric Class</span>
-      <span class="pill"><i class="fas fa-ticket"></i> R120 per ticket</span>
+      <span class="pill"><i class="fas fa-calendar-day"></i> 9 October 2026</span>
+      <span class="pill"><i class="fas fa-map-pin"></i> Rain Hill Farm</span>
+      <span class="pill"><i class="fas fa-ticket"></i> R50 per person</span>
     </div>
   </div>
 
-  <!-- CUT-OFF -->
+  <!-- RSVP -->
   <div class="cutoff">
     <i class="fas fa-hourglass-end"></i>
-    Ticket sales close: 30 September 2026
+    RSVP by: 08 October 2026
   </div>
 
   <!-- BODY -->
@@ -332,16 +330,17 @@
 
     <p class="intro">
       Dear Parent / Guardian,<br>
-      You are warmly invited to our <strong>Matric Garden Evening</strong>.
-      Kindly complete the form below to reserve your tickets —
-      a maximum of <strong>3 tickets per parent</strong>.
+      You are warmly invited to our <strong>Matric Gratitude Dinner</strong>
+      on <strong>9 October 2026</strong> at <strong>Rain Hill Farm</strong>.
+      Kindly complete the form below to reserve your seats — the student plus
+      a maximum of <strong>2 guests</strong> (3 tickets total).
     </p>
 
-    <form id="ticketForm" name="gardenEvening">
+    <form id="ticketForm" name="gratitudeDinner">
 
       <div class="field">
         <label for="learnerName">
-          <i class="fas fa-user-graduate"></i> Learner full name
+          <i class="fas fa-user-graduate"></i> Child's full name
         </label>
         <input type="text" id="learnerName" name="learnerName"
                placeholder="e.g. Thabo Mokoena" required>
@@ -353,13 +352,28 @@
         </label>
         <select id="ticketCount" name="ticketCount" required>
           <option value="" disabled selected>— Select quantity —</option>
-          <option value="1">1 ticket — R120</option>
-          <option value="2">2 tickets — R240</option>
-          <option value="3">3 tickets — R360</option>
+          <option value="1">1 ticket — R50 (student only)</option>
+          <option value="2">2 tickets — R100 (student + 1 guest)</option>
+          <option value="3">3 tickets — R150 (student + 2 guests)</option>
         </select>
         <div class="hint">
           <i class="fas fa-info-circle"></i>
-          Maximum 3 tickets per parent · R120 each
+          Student + up to 2 guests · R50 per person
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="transportation">
+          <i class="fas fa-bus"></i> Transportation
+        </label>
+        <select id="transportation" name="transportation" required>
+          <option value="" disabled selected>— Select transportation —</option>
+          <option value="Self">Self (own transport)</option>
+          <option value="Bus at school">Bus at school</option>
+        </select>
+        <div class="hint">
+          <i class="fas fa-info-circle"></i>
+          Please indicate how you will be travelling to Rain Hill Farm
         </div>
       </div>
 
@@ -372,7 +386,7 @@
 
       <button type="submit" id="submitBtn">
         <i class="fas fa-paper-plane"></i>
-        Confirm my booking
+        Confirm my RSVP
       </button>
 
       <div id="formMessage" class="message"></div>
@@ -391,13 +405,14 @@
 <script>
 (function () {
   // ⚠️ Replace with your Google Apps Script Web App URL
- const GOOGLE_SHEET_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbwDqkjRgaFrXXJNqxvJqh0694GYgBDpkBifRfxC9NZ29X-CoSxQ3AOk7VAlvo9yDbHF5A/exec';
+  const GOOGLE_SHEET_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbwDqkjRgaFrXXJNqxvJqh0694GYgBDpkBifRfxC9NZ29X-CoSxQ3AOk7VAlvo9yDbHF5A/exec';
 
-  const TICKET_PRICE = 120;
+  const TICKET_PRICE = 50;
 
   const form        = document.getElementById('ticketForm');
   const learnerInput= document.getElementById('learnerName');
   const ticketSelect= document.getElementById('ticketCount');
+  const transportSelect = document.getElementById('transportation');
   const totalDisplay= document.getElementById('totalDisplay');
   const totalHidden = document.getElementById('totalAmount');
   const formMessage = document.getElementById('formMessage');
@@ -426,7 +441,7 @@
 
     const learnerName = learnerInput.value.trim();
     if (!learnerName) {
-      formMessage.textContent = '❌ Please enter the learner\'s full name.';
+      formMessage.textContent = '❌ Please enter the child\'s full name.';
       formMessage.classList.add('error');
       return;
     }
@@ -438,17 +453,28 @@
       return;
     }
 
+    const transportation = transportSelect.value;
+    if (!transportation) {
+      formMessage.textContent = '❌ Please select your transportation option.';
+      formMessage.classList.add('error');
+      return;
+    }
+
     const totalAmount = count * TICKET_PRICE;
 
     const formData = new URLSearchParams();
     formData.append('learnerName', learnerName);
     formData.append('ticketCount', count);
+    formData.append('transportation', transportation);
     formData.append('totalAmount', totalAmount);
+    formData.append('event', 'Matric Gratitude Dinner');
+    formData.append('eventDate', '9 October 2026');
+    formData.append('venue', 'Rain Hill Farm');
     formData.append('timestamp', new Date().toISOString());
 
     submitBtn.disabled = true;
     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
-    formMessage.textContent = '⏳ Submitting your booking...';
+    formMessage.textContent = '⏳ Submitting your RSVP...';
     formMessage.className = 'message';
 
     fetch(GOOGLE_SHEET_WEBAPP_URL, {
@@ -462,20 +488,21 @@
     })
     .then(function (data) {
       console.log('Server response:', data);
-      formMessage.textContent = '✅ Booking confirmed! Thank you.';
+      formMessage.textContent = '✅ RSVP confirmed! Thank you.';
       formMessage.classList.add('success');
       learnerInput.value = '';
       ticketSelect.value = '';
+      transportSelect.value = '';
       updateTotal();
       submitBtn.disabled = false;
-      submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Confirm my booking';
+      submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Confirm my RSVP';
     })
     .catch(function (error) {
       console.error('Error!', error);
       formMessage.textContent = '❌ Something went wrong. Please try again or contact the school.';
       formMessage.classList.add('error');
       submitBtn.disabled = false;
-      submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Confirm my booking';
+      submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Confirm my RSVP';
     });
   });
 })();

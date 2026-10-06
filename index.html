@@ -386,6 +386,20 @@
         </div>
       </div>
 
+      <!-- ← NEW FIELD: Parent phone -->
+      <div class="field">
+        <label for="parentPhone">
+          <i class="fas fa-phone"></i> Parent phone number
+        </label>
+        <input type="tel" id="parentPhone" name="parentPhone"
+               placeholder="e.g. 072 123 4567" required autocomplete="off">
+        <div class="hint">
+          <i class="fas fa-info-circle"></i>
+          So the school can contact you about the event
+        </div>
+      </div>
+      <!-- ← END NEW FIELD -->
+
       <div class="field">
         <label for="ticketCount">
           <i class="fas fa-ticket-alt"></i> Number of tickets
@@ -459,6 +473,7 @@
 
   const form            = document.getElementById('ticketForm');
   const learnerInput    = document.getElementById('learnerName');
+  const phoneInput      = document.getElementById('parentPhone');        // ← NEW FIELD
   const ticketSelect    = document.getElementById('ticketCount');
   const transportSelect = document.getElementById('transportation');
   const totalDisplay    = document.getElementById('totalDisplay');
@@ -527,6 +542,15 @@
       return;
     }
 
+    // ← NEW FIELD validation
+    const parentPhone = (phoneInput.value || '').trim();
+    if (!parentPhone) {
+      formMessage.textContent = '❌ Please enter your phone number.';
+      formMessage.classList.add('error');
+      phoneInput.focus();
+      return;
+    }
+
     const count = parseInt(ticketSelect.value, 10);
     if (isNaN(count) || count < 1 || count > 3) {
       formMessage.textContent = '❌ Please select between 1 and 3 tickets.';
@@ -546,6 +570,7 @@
 
     const formData = new URLSearchParams();
     formData.append('learnerName',    String(learnerName));
+    formData.append('parentPhone',    String(parentPhone));               // ← NEW FIELD
     formData.append('ticketCount',    String(count));
     formData.append('transportation', String(transportation));
     formData.append('totalAmount',    String(totalAmount));
@@ -573,6 +598,7 @@
       formMessage.innerHTML = '✅ RSVP received! Please pay <strong>cash at Admin Reception</strong> to confirm your booking.';
       formMessage.classList.add('success');
       learnerInput.value = '';
+      phoneInput.value   = '';                                            // ← NEW FIELD
       ticketSelect.value = '';
       transportSelect.value = '';
       updateTotal();

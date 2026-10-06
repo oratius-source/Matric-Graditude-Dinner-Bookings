@@ -1,617 +1,163 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Kitsong School of Royal Bafokeng · Matric Gratitude Dinner</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-<style>
-  :root{
-    --blue-deep:   #0b2a5b;
-    --blue-mid:    #1d4e9b;
-    --blue-light:  #3f7fd1;
-    --khaki-light: #efe6c8;
-    --khaki-mid:   #d9c98a;
-    --khaki-dark:  #b8a35c;
-    --cream:       #fbf7ec;
-    --ink:         #14213d;
-    --white:       #ffffff;
-  }
+/**
+ * Kitsong School of Royal Bafokeng
+ * Matric Gratitude Dinner — RSVP Handler
+ *
+ * Sheet column layout (MUST match this exact order):
+ *   A = Timestamp
+ *   B = Learner Name
+ *   C = Parent Phone
+ *   D = Ticket Count
+ *   E = Transportation
+ *   F = Total Amount
+ *   G = Payment Method
+ *   H = Event
+ *   I = Event Date
+ *   J = Venue
+ */
 
-  *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',Roboto,system-ui,sans-serif;}
+const SHEET_NAME     = 'Sheet1';   // ← change if your tab is named differently
+const NAME_COLUMN    = 2;          // column B = learner name (for duplicate check)
+const DATA_START_ROW = 2;          // row 1 = headers
 
-  body{
-    min-height:100vh;
-    padding:2rem 1rem;
-    background:
-      radial-gradient(circle at 15% 10%, rgba(63,127,209,.35), transparent 55%),
-      radial-gradient(circle at 85% 90%, rgba(217,201,138,.35), transparent 55%),
-      linear-gradient(160deg, var(--blue-deep) 0%, #071c3d 60%, #04122a 100%);
-    display:flex;
-    align-items:center;
-    justify-content:center;
-  }
-
-  .card{
-    width:100%;
-    max-width:680px;
-    background:var(--cream);
-    border-radius:28px;
-    overflow:hidden;
-    box-shadow:
-      0 30px 60px -20px rgba(0,0,0,.7),
-      0 0 0 1px rgba(217,201,138,.4);
-    position:relative;
-  }
-
-  .card::before{
-    content:"";
-    display:block;
-    height:8px;
-    background:linear-gradient(90deg, var(--khaki-mid), var(--khaki-light), var(--khaki-mid));
-  }
-
-  .cash-notice{
-    background:linear-gradient(90deg, #1d4e9b, #0b2a5b);
-    color:var(--khaki-light);
-    padding:.85rem 1.2rem;
-    text-align:center;
-    font-weight:700;
-    font-size:.9rem;
-    letter-spacing:.3px;
-    border-bottom:3px solid var(--khaki-mid);
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    gap:8px;
-  }
-  .cash-notice i{color:var(--khaki-mid);font-size:1.05rem;}
-
-  .hero{
-    background:
-      linear-gradient(160deg, rgba(11,42,91,.92), rgba(29,78,155,.88)),
-      url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><g fill="none" stroke="%23ffffff" stroke-opacity="0.06" stroke-width="2"><circle cx="100" cy="100" r="70"/><circle cx="100" cy="100" r="45"/><circle cx="100" cy="100" r="20"/></g></svg>');
-    background-size:cover, 220px;
-    padding:2.4rem 2rem 2.8rem;
-    text-align:center;
-    color:var(--white);
-    position:relative;
-  }
-
-  .school{
-    display:inline-flex;
-    align-items:center;
-    gap:10px;
-    background:rgba(239,230,200,.15);
-    border:1px solid rgba(239,230,200,.45);
-    padding:.45rem 1rem;
-    border-radius:999px;
-    font-size:.78rem;
-    letter-spacing:1.6px;
-    text-transform:uppercase;
-    font-weight:600;
-    color:var(--khaki-light);
-    margin-bottom:1.2rem;
-  }
-  .school i{color:var(--khaki-mid);}
-
-  .hero h1{
-    font-size:clamp(1.7rem,4.2vw,2.4rem);
-    font-weight:800;
-    letter-spacing:-.5px;
-    line-height:1.15;
-    margin-bottom:.4rem;
-    color:var(--white);
-  }
-  .hero h1 .accent{color:var(--khaki-light);}
-
-  .hero .subtitle{
-    font-size:1.02rem;
-    color:rgba(255,255,255,.85);
-    margin-top:.5rem;
-    font-style:italic;
-  }
-
-  .event-meta{
-    display:flex;
-    flex-wrap:wrap;
-    justify-content:center;
-    gap:.6rem;
-    margin-top:1.4rem;
-  }
-  .pill{
-    display:inline-flex;
-    align-items:center;
-    gap:8px;
-    background:rgba(255,255,255,.1);
-    border:1px solid rgba(239,230,200,.35);
-    color:var(--khaki-light);
-    padding:.5rem .95rem;
-    border-radius:999px;
-    font-size:.85rem;
-    font-weight:600;
-  }
-  .pill i{color:var(--khaki-mid);}
-
-  .cutoff{
-    background:linear-gradient(90deg, var(--khaki-mid), var(--khaki-light), var(--khaki-mid));
-    color:var(--blue-deep);
-    padding:.85rem 1.2rem;
-    text-align:center;
-    font-weight:700;
-    font-size:.92rem;
-    letter-spacing:.3px;
-    border-bottom:2px solid var(--khaki-dark);
-  }
-  .cutoff i{margin-right:6px;color:var(--blue-mid);}
-
-  .body{padding:2.2rem 2rem 2.4rem;}
-
-  .intro{
-    text-align:center;
-    color:#3a4a63;
-    font-size:.95rem;
-    line-height:1.6;
-    margin-bottom:1.8rem;
-    padding:0 .5rem;
-  }
-  .intro strong{color:var(--blue-deep);}
-
-  .field{margin-bottom:1.6rem;}
-
-  label{
-    display:flex;
-    align-items:center;
-    gap:8px;
-    font-weight:700;
-    color:var(--blue-deep);
-    margin-bottom:.55rem;
-    font-size:.95rem;
-    letter-spacing:.2px;
-  }
-  label i{color:var(--khaki-dark);width:18px;text-align:center;}
-
-  input,select{
-    width:100%;
-    padding:.95rem 1.15rem;
-    border:2px solid #dcd2b3;
-    border-radius:14px;
-    font-size:1.02rem;
-    background:var(--white);
-    color:var(--ink);
-    transition:.2s;
-    outline:none;
-    appearance:none;
-  }
-  select{
-    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230b2a5b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
-    background-repeat:no-repeat;
-    background-position:right 1rem center;
-    background-size:16px;
-    padding-right:2.6rem;
-    cursor:pointer;
-  }
-  input:focus,select:focus{
-    border-color:var(--blue-mid);
-    box-shadow:0 0 0 4px rgba(29,78,155,.15);
-  }
-
-  input.duplicate{
-    border-color:#d9534f;
-    box-shadow:0 0 0 4px rgba(217,83,79,.15);
-  }
-
-  .hint{
-    display:flex;
-    align-items:center;
-    gap:6px;
-    font-size:.82rem;
-    color:#6b6350;
-    margin-top:.45rem;
-  }
-  .hint i{color:var(--khaki-dark);font-size:.78rem;}
-
-  .summary{
-    background:linear-gradient(135deg, rgba(239,230,200,.65), rgba(217,201,138,.35));
-    border-left:6px solid var(--blue-mid);
-    border-radius:16px;
-    padding:1rem 1.2rem;
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    margin:1.6rem 0 1.2rem;
-  }
-  .summary .label{
-    display:flex;
-    align-items:center;
-    gap:8px;
-    color:var(--blue-deep);
-    font-weight:700;
-    font-size:.95rem;
-  }
-  .summary .label i{color:var(--khaki-dark);}
-  .summary .price{
-    font-size:1.5rem;
-    font-weight:800;
-    color:var(--blue-deep);
-  }
-  .summary .price small{
-    font-size:.85rem;
-    font-weight:600;
-    color:#6b6350;
-  }
-
-  .payment-note{
-    display:flex;
-    align-items:flex-start;
-    gap:10px;
-    background:rgba(29,78,155,.08);
-    border:1px dashed var(--blue-mid);
-    border-radius:14px;
-    padding:.85rem 1rem;
-    margin-bottom:1.2rem;
-    font-size:.87rem;
-    color:#3a4a63;
-    line-height:1.5;
-  }
-  .payment-note i{
-    color:var(--blue-mid);
-    font-size:1.1rem;
-    margin-top:2px;
-  }
-  .payment-note strong{color:var(--blue-deep);}
-
-  button{
-    width:100%;
-    padding:1.1rem;
-    background:linear-gradient(135deg, var(--blue-mid), var(--blue-deep));
-    color:var(--white);
-    border:none;
-    border-radius:16px;
-    font-size:1.08rem;
-    font-weight:700;
-    letter-spacing:.4px;
-    cursor:pointer;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    gap:10px;
-    transition:.2s;
-    box-shadow:0 10px 20px -8px rgba(11,42,91,.6);
-    border-bottom:3px solid var(--khaki-mid);
-  }
-  button:hover:not(:disabled){
-    transform:translateY(-1px);
-    box-shadow:0 14px 26px -10px rgba(11,42,91,.75);
-  }
-  button:active:not(:disabled){transform:translateY(1px);}
-  button:disabled{
-    opacity:.7;
-    cursor:not-allowed;
-    filter:grayscale(.3);
-  }
-
-  .message{
-    margin-top:1.1rem;
-    text-align:center;
-    font-size:.95rem;
-    font-weight:600;
-    padding:.85rem;
-    border-radius:14px;
-    min-height:1rem;
-    transition:.2s;
-  }
-  .message.success{
-    background:#e3f0d8;
-    color:#1d4a2d;
-    border:1px solid #b8d99f;
-  }
-  .message.error{
-    background:#fbe3e3;
-    color:#8a2222;
-    border:1px solid #f0b8b8;
-  }
-
-  .footer{
-    background:var(--blue-deep);
-    color:rgba(255,255,255,.75);
-    text-align:center;
-    padding:1.1rem;
-    font-size:.78rem;
-    letter-spacing:.4px;
-    border-top:3px solid var(--khaki-mid);
-  }
-  .footer i{color:var(--khaki-mid);margin:0 4px;}
-
-  @media (max-width:480px){
-    .cash-notice{font-size:.82rem;padding:.75rem 1rem;}
-    .hero{padding:1.8rem 1.3rem 2rem;}
-    .body{padding:1.6rem 1.3rem 1.8rem;}
-    .summary{flex-direction:column;gap:.5rem;align-items:flex-start;}
-    .summary .price{align-self:flex-end;}
-  }
-</style>
-</head>
-<body>
-
-<div class="card">
-
-  <div class="cash-notice">
-    <i class="fas fa-money-bill-wave"></i>
-    Cash payment at Admin Reception
-  </div>
-
-  <div class="hero">
-    <div class="school">
-      <i class="fas fa-shield-halved"></i>
-      Kitsong School of Royal Bafokeng
-    </div>
-
-    <h1>Matric <span class="accent">Gratitude Dinner</span></h1>
-    <p class="subtitle">An evening of thanks and celebration</p>
-
-    <div class="event-meta">
-      <span class="pill"><i class="fas fa-calendar-day"></i> 9 October 2026</span>
-      <span class="pill"><i class="fas fa-map-pin"></i> Rain Hill Farm</span>
-      <span class="pill"><i class="fas fa-ticket"></i> R50 per person</span>
-    </div>
-  </div>
-
-  <div class="cutoff">
-    <i class="fas fa-hourglass-end"></i>
-    RSVP by: 08 October 2026
-  </div>
-
-  <div class="body">
-
-    <p class="intro">
-      Dear Parent / Guardian,<br>
-      You are warmly invited to our <strong>Matric Gratitude Dinner</strong>
-      on <strong>9 October 2026</strong> at <strong>Rain Hill Farm</strong>.
-      Kindly complete the form below to reserve your seats — the student plus
-      a maximum of <strong>2 guests</strong> (3 tickets total).
-    </p>
-
-    <form id="ticketForm" name="gratitudeDinner">
-
-      <div class="field">
-        <label for="learnerName">
-          <i class="fas fa-user-graduate"></i> Child's full name
-        </label>
-        <input type="text" id="learnerName" name="learnerName"
-               placeholder="e.g. Thabo Mokoena" required autocomplete="off">
-        <div class="hint">
-          <i class="fas fa-info-circle"></i>
-          Only one RSVP per learner — duplicates will be rejected
-        </div>
-      </div>
-
-      <div class="field">
-        <label for="parentPhone">
-          <i class="fas fa-phone"></i> Parent phone number
-        </label>
-        <input type="tel" id="parentPhone" name="parentPhone"
-               placeholder="e.g. 072 123 4567" required autocomplete="off">
-        <div class="hint">
-          <i class="fas fa-info-circle"></i>
-          So the school can contact you about the event
-        </div>
-      </div>
-
-      <div class="field">
-        <label for="ticketCount">
-          <i class="fas fa-ticket-alt"></i> Number of tickets
-        </label>
-        <select id="ticketCount" name="ticketCount" required>
-          <option value="" disabled selected>— Select quantity —</option>
-          <option value="1">1 ticket — R50 (student only)</option>
-          <option value="2">2 tickets — R100 (student + 1 guest)</option>
-          <option value="3">3 tickets — R150 (student + 2 guests)</option>
-        </select>
-        <div class="hint">
-          <i class="fas fa-info-circle"></i>
-          R50 per person · Price does not change with transportation
-        </div>
-      </div>
-
-      <div class="field">
-        <label for="transportation">
-          <i class="fas fa-bus"></i> Transportation
-        </label>
-        <select id="transportation" name="transportation" required>
-          <option value="" disabled selected>— Select transportation —</option>
-          <option value="Self">Self (own transport)</option>
-          <option value="Bus at school">Bus at school</option>
-        </select>
-        <div class="hint">
-          <i class="fas fa-info-circle"></i>
-          For logistics only — does not affect your total
-        </div>
-      </div>
-
-      <div class="summary">
-        <span class="label"><i class="fas fa-calculator"></i> Total due</span>
-        <span class="price" id="totalDisplay">R0 <small>ZAR</small></span>
-      </div>
-
-      <div class="payment-note">
-        <i class="fas fa-hand-holding-dollar"></i>
-        <span>
-          <strong>Payment method:</strong> Cash payment at Admin Reception.
-          Please bring the exact amount. Your booking will be confirmed once
-          payment has been received.
-        </span>
-      </div>
-
-      <input type="hidden" id="totalAmount" name="totalAmount" value="0">
-
-      <button type="submit" id="submitBtn">
-        <i class="fas fa-paper-plane"></i>
-        Confirm my RSVP
-      </button>
-
-      <div id="formMessage" class="message"></div>
-
-    </form>
-  </div>
-
-  <div class="footer">
-    <i class="fas fa-lock"></i> Your details are securely submitted to the school's records
-    <i class="fas fa-leaf"></i>
-  </div>
-
-</div>
-
-<script>
-(function () {
-  const GOOGLE_SHEET_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbwDqkjRgaFrXXJNqxvJqh0694GYgBDpkBifRfxC9NZ29X-CoSxQ3AOk7VAlvo9yDbHF5A/exec';
-
-  const TICKET_PRICE = 50;
-
-  const form            = document.getElementById('ticketForm');
-  const learnerInput    = document.getElementById('learnerName');
-  const phoneInput      = document.getElementById('parentPhone');
-  const ticketSelect    = document.getElementById('ticketCount');
-  const transportSelect = document.getElementById('transportation');
-  const totalDisplay    = document.getElementById('totalDisplay');
-  const totalHidden     = document.getElementById('totalAmount');
-  const formMessage     = document.getElementById('formMessage');
-  const submitBtn       = document.getElementById('submitBtn');
-
-  function normalizeName(name) {
-    return name.toLowerCase().replace(/\s+/g, ' ').trim();
-  }
-
-  function isDuplicateLocally(name) {
-    try {
-      const list = JSON.parse(localStorage.getItem('rsvpLearners') || '[]');
-      return list.indexOf(normalizeName(name)) !== -1;
-    } catch (e) { return false; }
-  }
-  function saveLocally(name) {
-    try {
-      const list = JSON.parse(localStorage.getItem('rsvpLearners') || '[]');
-      const norm = normalizeName(name);
-      if (list.indexOf(norm) === -1) list.push(norm);
-      localStorage.setItem('rsvpLearners', JSON.stringify(list));
-    } catch (e) { /* ignore */ }
-  }
-
-  learnerInput.addEventListener('input', function () {
-    if (learnerInput.value.trim() && isDuplicateLocally(learnerInput.value)) {
-      learnerInput.classList.add('duplicate');
-    } else {
-      learnerInput.classList.remove('duplicate');
+/**
+ * Handles form POST requests
+ */
+function doPost(e) {
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+    if (!sheet) {
+      return jsonResponse({
+        status: 'error',
+        message: 'Sheet not found: ' + SHEET_NAME
+      });
     }
-  });
 
-  function updateTotal() {
-    const count = parseInt(ticketSelect.value, 10);
-    if (!isNaN(count) && count >= 1 && count <= 3) {
-      const total = count * TICKET_PRICE;
-      totalDisplay.innerHTML = 'R' + total + ' <small>ZAR</small>';
-      totalHidden.value = total;
-    } else {
-      totalDisplay.innerHTML = 'R0 <small>ZAR</small>';
-      totalHidden.value = 0;
-    }
-  }
-  ticketSelect.addEventListener('change', updateTotal);
-  ticketSelect.addEventListener('input', updateTotal);
+    const data = e.parameter || {};
 
-  form.addEventListener('submit', function (e) {
-    e.preventDefault();
-    formMessage.className = 'message';
-    formMessage.textContent = '';
-    learnerInput.classList.remove('duplicate');
+    // ---------- Extract & sanitize every field ----------
+    const learnerName    = cleanName(data.learnerName);
+    const parentPhone    = cleanName(data.parentPhone);
+    const ticketCount    = cleanName(data.ticketCount);
+    const transportation = cleanName(data.transportation);
+    const totalAmount    = cleanName(data.totalAmount);
+    const paymentMethod  = cleanName(data.paymentMethod) || 'Cash at Admin Reception';
+    const eventName      = cleanName(data.event)         || 'Matric Gratitude Dinner';
+    const eventDate      = cleanName(data.eventDate)     || '9 October 2026';
+    const venue          = cleanName(data.venue)         || 'Rain Hill Farm';
 
-    const learnerName = learnerInput.value.trim();
+    // ---------- Validation ----------
     if (!learnerName) {
-      formMessage.textContent = '❌ Please enter the child\'s full name.';
-      formMessage.classList.add('error');
-      return;
+      return jsonResponse({ status: 'error', message: 'Learner name is required.' });
     }
-
-    if (isDuplicateLocally(learnerName)) {
-      formMessage.textContent = '❌ This learner has already been RSVP\'d. Only one booking per learner is allowed.';
-      formMessage.classList.add('error');
-      learnerInput.classList.add('duplicate');
-      return;
-    }
-
-    const parentPhone = (phoneInput.value || '').trim();
     if (!parentPhone) {
-      formMessage.textContent = '❌ Please enter your phone number.';
-      formMessage.classList.add('error');
-      phoneInput.focus();
-      return;
+      return jsonResponse({ status: 'error', message: 'Parent phone is required.' });
     }
-
-    const count = parseInt(ticketSelect.value, 10);
-    if (isNaN(count) || count < 1 || count > 3) {
-      formMessage.textContent = '❌ Please select between 1 and 3 tickets.';
-      formMessage.classList.add('error');
-      return;
+    if (!ticketCount) {
+      return jsonResponse({ status: 'error', message: 'Ticket count is required.' });
     }
-
-    const transportation = (transportSelect.value || '').trim();
     if (!transportation) {
-      formMessage.textContent = '❌ Please select your mode of transportation.';
-      formMessage.classList.add('error');
-      transportSelect.focus();
-      return;
+      return jsonResponse({ status: 'error', message: 'Transportation is required.' });
     }
 
-    const totalAmount = count * TICKET_PRICE;
+    // ---------- Server-side total guard (R50 × tickets) ----------
+    const ticketsNum = parseInt(ticketCount, 10);
+    const expectedTotal = (!isNaN(ticketsNum) && ticketsNum >= 1 && ticketsNum <= 3)
+      ? ticketsNum * 50
+      : 0;
 
-    const formData = new URLSearchParams();
-    formData.append('learnerName',    String(learnerName));
-    formData.append('parentPhone',    String(parentPhone));
-    formData.append('ticketCount',    String(count));
-    formData.append('transportation', String(transportation));
-    formData.append('totalAmount',    String(totalAmount));
-    formData.append('paymentMethod',  'Cash at Admin Reception');
-    formData.append('event',          'Matric Gratitude Dinner');
-    formData.append('eventDate',      '9 October 2026');
-    formData.append('venue',          'Rain Hill Farm');
-    formData.append('timestamp',      new Date().toISOString());
+    // Prefer the server-computed total (protects against a stale/zero hidden field)
+    const finalTotal = expectedTotal > 0 ? expectedTotal : (parseInt(totalAmount, 10) || 0);
 
-    console.log('Submitting — name:', learnerName, '| phone:', parentPhone,
-                '| tickets:', count, '| transport:', transportation,
-                '| total:', totalAmount);
+    // ---------- Duplicate check ----------
+    if (isDuplicate(sheet, learnerName)) {
+      return jsonResponse({
+        status: 'duplicate',
+        message: 'This learner has already been RSVP\'d.'
+      });
+    }
 
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
-    formMessage.textContent = '⏳ Submitting your RSVP...';
-    formMessage.className = 'message';
+    // ---------- Append the row (order MUST match columns A-J) ----------
+    sheet.appendRow([
+      new Date(),        // A - Timestamp
+      learnerName,       // B - Learner Name
+      parentPhone,       // C - Parent Phone
+      ticketCount,       // D - Ticket Count
+      transportation,    // E - Transportation
+      finalTotal,        // F - Total Amount
+      paymentMethod,     // G - Payment Method
+      eventName,         // H - Event
+      eventDate,         // I - Event Date
+      venue              // J - Venue
+    ]);
 
-    fetch(GOOGLE_SHEET_WEBAPP_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: formData.toString()
-    })
-    .then(function () {
-      saveLocally(learnerName);
-      formMessage.innerHTML = '✅ RSVP received! Please pay <strong>cash at Admin Reception</strong> to confirm your booking.';
-      formMessage.classList.add('success');
-      learnerInput.value = '';
-      phoneInput.value   = '';
-      ticketSelect.value = '';
-      transportSelect.value = '';
-      updateTotal();
-      submitBtn.disabled = false;
-      submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Confirm my RSVP';
-    })
-    .catch(function (error) {
-      console.error('Error!', error);
-      formMessage.textContent = '❌ Something went wrong. Please try again or contact the school.';
-      formMessage.classList.add('error');
-      submitBtn.disabled = false;
-      submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Confirm my RSVP';
+    return jsonResponse({
+      status: 'success',
+      learnerName: learnerName,
+      transportation: transportation,
+      totalAmount: finalTotal
     });
+
+  } catch (err) {
+    return jsonResponse({ status: 'error', message: err.toString() });
+  }
+}
+
+/**
+ * Handles GET requests (for testing in a browser)
+ */
+function doGet(e) {
+  return jsonResponse({
+    status: 'ok',
+    message: 'Kitsong RSVP endpoint is live.'
   });
-})();
-</script>
-</body>
-</html>
+}
+
+// ---------- Helpers ----------
+
+function cleanName(val) {
+  return (val == null ? '' : val.toString()).replace(/\s+/g, ' ').trim();
+}
+
+function isDuplicate(sheet, learnerName) {
+  const lastRow = sheet.getLastRow();
+  if (lastRow < DATA_START_ROW) return false;
+
+  const numRows = lastRow - DATA_START_ROW + 1;
+  const names = sheet
+    .getRange(DATA_START_ROW, NAME_COLUMN, numRows, 1)
+    .getValues()
+    .flat()
+    .map(function (n) { return cleanName(n).toLowerCase(); });
+
+  return names.indexOf(learnerName.toLowerCase()) !== -1;
+}
+
+function jsonResponse(obj) {
+  return ContentService
+    .createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+// ---------- MANUAL TEST — run this from the editor to verify ----------
+function testAddRow() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+  if (!sheet) {
+    Logger.log('❌ Sheet not found: ' + SHEET_NAME);
+    return;
+  }
+
+  sheet.appendRow([
+    new Date(),
+    'TEST LEARNER',
+    '072 000 0000',
+    '2',
+    'Bus at school',
+    '100',
+    'Cash at Admin Reception',
+    'Matric Gratitude Dinner',
+    '9 October 2026',
+    'Rain Hill Farm'
+  ]);
+
+  Logger.log('✅ Test row added. Sheet now has ' + sheet.getLastColumn() + ' columns.');
+}

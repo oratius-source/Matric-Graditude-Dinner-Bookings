@@ -1,163 +1,521 @@
-/**
- * Kitsong School of Royal Bafokeng
- * Matric Gratitude Dinner — RSVP Handler
- *
- * Sheet column layout (MUST match this exact order):
- *   A = Timestamp
- *   B = Learner Name
- *   C = Parent Phone
- *   D = Ticket Count
- *   E = Transportation
- *   F = Total Amount
- *   G = Payment Method
- *   H = Event
- *   I = Event Date
- *   J = Venue
- */
-
-const SHEET_NAME     = 'Sheet1';   // ← change if your tab is named differently
-const NAME_COLUMN    = 2;          // column B = learner name (for duplicate check)
-const DATA_START_ROW = 2;          // row 1 = headers
-
-/**
- * Handles form POST requests
- */
-function doPost(e) {
-  try {
-    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
-    if (!sheet) {
-      return jsonResponse({
-        status: 'error',
-        message: 'Sheet not found: ' + SHEET_NAME
-      });
-    }
-
-    const data = e.parameter || {};
-
-    // ---------- Extract & sanitize every field ----------
-    const learnerName    = cleanName(data.learnerName);
-    const parentPhone    = cleanName(data.parentPhone);
-    const ticketCount    = cleanName(data.ticketCount);
-    const transportation = cleanName(data.transportation);
-    const totalAmount    = cleanName(data.totalAmount);
-    const paymentMethod  = cleanName(data.paymentMethod) || 'Cash at Admin Reception';
-    const eventName      = cleanName(data.event)         || 'Matric Gratitude Dinner';
-    const eventDate      = cleanName(data.eventDate)     || '9 October 2026';
-    const venue          = cleanName(data.venue)         || 'Rain Hill Farm';
-
-    // ---------- Validation ----------
-    if (!learnerName) {
-      return jsonResponse({ status: 'error', message: 'Learner name is required.' });
-    }
-    if (!parentPhone) {
-      return jsonResponse({ status: 'error', message: 'Parent phone is required.' });
-    }
-    if (!ticketCount) {
-      return jsonResponse({ status: 'error', message: 'Ticket count is required.' });
-    }
-    if (!transportation) {
-      return jsonResponse({ status: 'error', message: 'Transportation is required.' });
-    }
-
-    // ---------- Server-side total guard (R50 × tickets) ----------
-    const ticketsNum = parseInt(ticketCount, 10);
-    const expectedTotal = (!isNaN(ticketsNum) && ticketsNum >= 1 && ticketsNum <= 3)
-      ? ticketsNum * 50
-      : 0;
-
-    // Prefer the server-computed total (protects against a stale/zero hidden field)
-    const finalTotal = expectedTotal > 0 ? expectedTotal : (parseInt(totalAmount, 10) || 0);
-
-    // ---------- Duplicate check ----------
-    if (isDuplicate(sheet, learnerName)) {
-      return jsonResponse({
-        status: 'duplicate',
-        message: 'This learner has already been RSVP\'d.'
-      });
-    }
-
-    // ---------- Append the row (order MUST match columns A-J) ----------
-    sheet.appendRow([
-      new Date(),        // A - Timestamp
-      learnerName,       // B - Learner Name
-      parentPhone,       // C - Parent Phone
-      ticketCount,       // D - Ticket Count
-      transportation,    // E - Transportation
-      finalTotal,        // F - Total Amount
-      paymentMethod,     // G - Payment Method
-      eventName,         // H - Event
-      eventDate,         // I - Event Date
-      venue              // J - Venue
-    ]);
-
-    return jsonResponse({
-      status: 'success',
-      learnerName: learnerName,
-      transportation: transportation,
-      totalAmount: finalTotal
-    });
-
-  } catch (err) {
-    return jsonResponse({ status: 'error', message: err.toString() });
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Learner Ticket Booking — Fundraiser</title>
+<style>
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
   }
+
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  .container {
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    width: 100%;
+    max-width: 600px;
+    padding: 40px;
+    animation: slideUp 0.5s ease-out;
+  }
+
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .header {
+    text-align: center;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 3px solid #667eea;
+  }
+
+  .header h1 {
+    color: #333;
+    font-size: 28px;
+    margin-bottom: 8px;
+  }
+
+  .header p {
+    color: #777;
+    font-size: 14px;
+  }
+
+  .form-group {
+    margin-bottom: 20px;
+  }
+
+  label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #444;
+    font-size: 14px;
+  }
+
+  label .required {
+    color: #e74c3c;
+    margin-left: 4px;
+  }
+
+  input[type="text"],
+  input[type="tel"],
+  input[type="number"],
+  input[type="date"],
+  select {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 15px;
+    font-family: inherit;
+    transition: all 0.2s ease;
+    background: #fafafa;
+  }
+
+  input:focus,
+  select:focus {
+    outline: none;
+    border-color: #667eea;
+    background: #fff;
+    box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.15);
+  }
+
+  input.error,
+  select.error {
+    border-color: #e74c3c;
+    background: #fff5f5;
+  }
+
+  .error-message {
+    color: #e74c3c;
+    font-size: 12px;
+    margin-top: 5px;
+    display: none;
+  }
+
+  .error-message.show {
+    display: block;
+  }
+
+  .row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+  }
+
+  @media (max-width: 500px) {
+    .row {
+      grid-template-columns: 1fr;
+    }
+    .container {
+      padding: 25px;
+    }
+  }
+
+  .radio-group {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    margin-top: 5px;
+  }
+
+  .radio-option {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 15px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: #fafafa;
+    flex: 1;
+    min-width: 100px;
+    justify-content: center;
+  }
+
+  .radio-option:hover {
+    border-color: #667eea;
+    background: #f0f4ff;
+  }
+
+  .radio-option input[type="radio"] {
+    cursor: pointer;
+    accent-color: #667eea;
+  }
+
+  .radio-option input[type="radio"]:checked + span {
+    color: #667eea;
+    font-weight: 600;
+  }
+
+  .radio-option:has(input:checked) {
+    border-color: #667eea;
+    background: #f0f4ff;
+  }
+
+  .btn-submit {
+    width: 100%;
+    padding: 15px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 10px;
+    font-family: inherit;
+  }
+
+  .btn-submit:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+  }
+
+  .btn-submit:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .status {
+    margin-top: 20px;
+    padding: 15px;
+    border-radius: 8px;
+    text-align: center;
+    font-weight: 600;
+    display: none;
+  }
+
+  .status.success {
+    display: block;
+    background: #d4edda;
+    color: #155724;
+    border: 2px solid #c3e6cb;
+  }
+
+  .status.error {
+    display: block;
+    background: #f8d7da;
+    color: #721c24;
+    border: 2px solid #f5c6cb;
+  }
+
+  .status.loading {
+    display: block;
+    background: #fff3cd;
+    color: #856404;
+    border: 2px solid #ffeeba;
+  }
+
+  .spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid #856404;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-right: 8px;
+    vertical-align: middle;
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .subtitle {
+    text-align: center;
+    color: #667eea;
+    font-size: 13px;
+    margin-bottom: 25px;
+    font-weight: 500;
+  }
+</style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🎟️ Learner Ticket Booking</h1>
+      <p>Fundraiser Event Registration</p>
+    </div>
+
+    <p class="subtitle">All fields marked <span style="color:#e74c3c">*</span> are required</p>
+
+    <form id="bookingForm" novalidate>
+
+      <!-- Learner Name -->
+      <div class="form-group">
+        <label for="learnerName">Learner Name <span class="required">*</span></label>
+        <input type="text" id="learnerName" name="learnerName" placeholder="e.g. Tebogo Mokoena">
+        <p class="error-message" id="err-learnerName">Please enter the learner's full name</p>
+      </div>
+
+      <!-- Parent Phone -->
+      <div class="form-group">
+        <label for="parentPhone">Parent Phone Number <span class="required">*</span></label>
+        <input type="tel" id="parentPhone" name="parentPhone" placeholder="e.g. 0721234567">
+        <p class="error-message" id="err-parentPhone">Please enter a valid 10-digit phone number</p>
+      </div>
+
+      <!-- Ticket Count + Total Amount -->
+      <div class="row">
+        <div class="form-group">
+          <label for="ticketCount">Ticket Count <span class="required">*</span></label>
+          <input type="number" id="ticketCount" name="ticketCount" min="1" max="20" placeholder="e.g. 2">
+          <p class="error-message" id="err-ticketCount">Enter 1–20 tickets</p>
+        </div>
+        <div class="form-group">
+          <label for="totalAmount">Total Amount (R) <span class="required">*</span></label>
+          <input type="number" id="totalAmount" name="totalAmount" min="0" placeholder="e.g. 100">
+          <p class="error-message" id="err-totalAmount">Please enter the total amount</p>
+        </div>
+      </div>
+
+      <!-- Transportation (radio buttons — records a value) -->
+      <div class="form-group">
+        <label>Transportation <span class="required">*</span></label>
+        <div class="radio-group" id="transportGroup">
+          <label class="radio-option">
+            <input type="radio" name="transportation" value="School Bus">
+            <span>🚌 School Bus</span>
+          </label>
+          <label class="radio-option">
+            <input type="radio" name="transportation" value="Own Transport">
+            <span>🚗 Own Transport</span>
+          </label>
+          <label class="radio-option">
+            <input type="radio" name="transportation" value="Public Transport">
+            <span>🚕 Public Transport</span>
+          </label>
+          <label class="radio-option">
+            <input type="radio" name="transportation" value="Walking">
+            <span>🚶 Walking</span>
+          </label>
+          <label class="radio-option">
+            <input type="radio" name="transportation" value="None">
+            <span>❌ None</span>
+          </label>
+        </div>
+        <p class="error-message" id="err-transportation">Please select a transportation method</p>
+      </div>
+
+      <!-- Payment Method -->
+      <div class="form-group">
+        <label for="paymentMethod">Payment Method <span class="required">*</span></label>
+        <select id="paymentMethod" name="paymentMethod">
+          <option value="">-- Select Payment Method --</option>
+          <option value="EFT">EFT</option>
+          <option value="Cash">Cash</option>
+          <option value="Card">Card</option>
+          <option value="SnapScan">SnapScan</option>
+          <option value="PayPal">PayPal</option>
+        </select>
+        <p class="error-message" id="err-paymentMethod">Please select a payment method</p>
+      </div>
+
+      <!-- Event + Event Date -->
+      <div class="row">
+        <div class="form-group">
+          <label for="event">Event <span class="required">*</span></label>
+          <input type="text" id="event" name="event" placeholder="e.g. Fundraiser">
+          <p class="error-message" id="err-event">Please enter the event name</p>
+        </div>
+        <div class="form-group">
+          <label for="eventDate">Event Date <span class="required">*</span></label>
+          <input type="date" id="eventDate" name="eventDate">
+          <p class="error-message" id="err-eventDate">Please select the event date</p>
+        </div>
+      </div>
+
+      <!-- Venue -->
+      <div class="form-group">
+        <label for="venue">Venue <span class="required">*</span></label>
+        <input type="text" id="venue" name="venue" placeholder="e.g. Main Hall">
+        <p class="error-message" id="err-venue">Please enter the venue</p>
+      </div>
+
+      <!-- Submit -->
+      <button type="submit" class="btn-submit" id="submitBtn">
+        📩 Submit Booking
+      </button>
+
+      <!-- Status Message -->
+      <div class="status" id="status"></div>
+    </form>
+  </div>
+
+<script>
+// ============================================================
+// STEP 1: REPLACE THIS WITH YOUR DEPLOYED APPS SCRIPT URL
+// ============================================================
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyfhY9fxUq7wag4mpZpNSUoGbDFvBW5i_eFVWIAgg18LA-TdxbDsWtWm0wvWCrt9tgFbA/exec";
+
+// ============================================================
+// FORM LOGIC
+// ============================================================
+const form = document.getElementById("bookingForm");
+const statusBox = document.getElementById("status");
+const submitBtn = document.getElementById("submitBtn");
+
+// Validation rules
+const rules = {
+  learnerName: v => v.trim().length >= 2,
+  parentPhone: v => /^[0-9]{10}$/.test(v.trim()),
+  ticketCount: v => {
+    const n = parseInt(v, 10);
+    return !isNaN(n) && n >= 1 && n <= 20;
+  },
+  totalAmount: v => {
+    const n = parseFloat(v);
+    return !isNaN(n) && n > 0;
+  },
+  paymentMethod: v => v.trim() !== "",
+  event: v => v.trim().length >= 2,
+  eventDate: v => v.trim() !== "",
+  venue: v => v.trim().length >= 2
+};
+
+// Show / hide error
+function setError(id, show) {
+  const input = document.getElementById(id);
+  const err = document.getElementById("err-" + id);
+  if (input) input.classList.toggle("error", show);
+  if (err) err.classList.toggle("show", show);
 }
 
-/**
- * Handles GET requests (for testing in a browser)
- */
-function doGet(e) {
-  return jsonResponse({
-    status: 'ok',
-    message: 'Kitsong RSVP endpoint is live.'
-  });
+// Get transportation value (radio buttons)
+function getTransportation() {
+  const selected = document.querySelector('input[name="transportation"]:checked');
+  return selected ? selected.value : "";
 }
 
-// ---------- Helpers ----------
+// Validate all fields
+function validateForm() {
+  let valid = true;
 
-function cleanName(val) {
-  return (val == null ? '' : val.toString()).replace(/\s+/g, ' ').trim();
+  // Text / number / date fields
+  for (const id in rules) {
+    const el = document.getElementById(id);
+    if (!el) continue;
+    const ok = rules[id](el.value);
+    setError(id, !ok);
+    if (!ok) valid = false;
+  }
+
+  // Transportation (radio)
+  const transport = getTransportation();
+  const transportError = document.getElementById("err-transportation");
+  transportError.classList.toggle("show", transport === "");
+  if (transport === "") valid = false;
+
+  return valid;
 }
 
-function isDuplicate(sheet, learnerName) {
-  const lastRow = sheet.getLastRow();
-  if (lastRow < DATA_START_ROW) return false;
-
-  const numRows = lastRow - DATA_START_ROW + 1;
-  const names = sheet
-    .getRange(DATA_START_ROW, NAME_COLUMN, numRows, 1)
-    .getValues()
-    .flat()
-    .map(function (n) { return cleanName(n).toLowerCase(); });
-
-  return names.indexOf(learnerName.toLowerCase()) !== -1;
+// Show status message
+function showStatus(message, type) {
+  statusBox.className = "status " + type;
+  statusBox.innerHTML = message;
 }
 
-function jsonResponse(obj) {
-  return ContentService
-    .createTextOutput(JSON.stringify(obj))
-    .setMimeType(ContentService.MimeType.JSON);
-}
+// Form submit
+form.addEventListener("submit", async function (e) {
+  e.preventDefault();
 
-// ---------- MANUAL TEST — run this from the editor to verify ----------
-function testAddRow() {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
-  if (!sheet) {
-    Logger.log('❌ Sheet not found: ' + SHEET_NAME);
+  if (!validateForm()) {
+    showStatus("⚠️ Please correct the highlighted fields.", "error");
     return;
   }
 
-  sheet.appendRow([
-    new Date(),
-    'TEST LEARNER',
-    '072 000 0000',
-    '2',
-    'Bus at school',
-    '100',
-    'Cash at Admin Reception',
-    'Matric Gratitude Dinner',
-    '9 October 2026',
-    'Rain Hill Farm'
-  ]);
+  // Gather data
+  const formData = new FormData();
+  formData.append("learnerName",    document.getElementById("learnerName").value.trim());
+  formData.append("parentPhone",    document.getElementById("parentPhone").value.trim());
+  formData.append("ticketCount",    document.getElementById("ticketCount").value.trim());
+  formData.append("transportation", getTransportation());
+  formData.append("totalAmount",    document.getElementById("totalAmount").value.trim());
+  formData.append("paymentMethod",  document.getElementById("paymentMethod").value);
+  formData.append("event",          document.getElementById("event").value.trim());
+  formData.append("eventDate",      document.getElementById("eventDate").value);
+  formData.append("venue",          document.getElementById("venue").value.trim());
 
-  Logger.log('✅ Test row added. Sheet now has ' + sheet.getLastColumn() + ' columns.');
-}
+  // Loading state
+  submitBtn.disabled = true;
+  showStatus('<span class="spinner"></span> Submitting your booking...', "loading");
+
+  try {
+    // Use no-cors mode because Google Apps Script requires it from the browser
+    await fetch(SCRIPT_URL, {
+      method: "POST",
+      mode: "no-cors",
+      body: formData
+    });
+
+    // With no-cors, we can't read the response — assume success
+    showStatus("✅ Booking submitted successfully! Thank you.", "success");
+    form.reset();
+    
+    // Remove any lingering error states
+    document.querySelectorAll(".error").forEach(el => el.classList.remove("error"));
+    document.querySelectorAll(".error-message").forEach(el => el.classList.remove("show"));
+
+  } catch (err) {
+    showStatus("❌ Error submitting booking: " + err.message, "error");
+  } finally {
+    submitBtn.disabled = false;
+  }
+});
+
+// Live validation — remove error as user types
+document.querySelectorAll("input, select").forEach(el => {
+  el.addEventListener("input", () => {
+    if (rules[el.id]) {
+      const ok = rules[el.id](el.value);
+      setError(el.id, !ok);
+    }
+  });
+});
+
+// Live validation for radio buttons
+document.querySelectorAll('input[name="transportation"]').forEach(el => {
+  el.addEventListener("change", () => {
+    document.getElementById("err-transportation").classList.remove("show");
+  });
+});
+
+// Auto-calculate total amount when ticket count changes
+// (change this to your price per ticket)
+const PRICE_PER_TICKET = 50;
+document.getElementById("ticketCount").addEventListener("input", function () {
+  const count = parseInt(this.value, 10);
+  if (!isNaN(count) && count > 0) {
+    const total = count * PRICE_PER_TICKET;
+    document.getElementById("totalAmount").value = total;
+  }
+});
+</script>
+</body>
+</html>
